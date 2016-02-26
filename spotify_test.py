@@ -13,29 +13,33 @@ import json
 spotify = spotipy.Spotify()
 
 # find_ra() will print a list of all artists related to the searched artist.
-# this function will loop until the user tells it to stop.
 #
-# NOTE: currently, the function uses the first artist returned in the search
-# result obtained by the Spotify API
 def find_ra():
-    loop_bool = True
-    while loop_bool:
-        search_term = raw_input('Enter an artist to search:\n')
-        search_results = spotify.search(q='artist:' + search_term, type='artist')
-        artist_id = search_results['artists']['items'][0]['id']
+    search_term = raw_input('Enter an artist to search:\n')
+    search_results = spotify.search(q='artist:' + search_term, type='artist')
 
-        artist_result = spotify.artist(artist_id=artist_id)
-        related_artists = spotify.artist_related_artists(artist_id=artist_id)
-        related_artists_list = related_artists['artists']
-        print '\nArtists related to %s:' % (search_term)
-        # print json.dumps(related_artists, indent=1)
-        related_artists_list = set(artist['name'] for artist in related_artists_list)
-        print '\n'.join(related_artists_list)
+    # ability for user to select one of the search results (top 5)
+    print 'Which of the following is the correct Artist?'
+    # COUNT NUMBER OF 'ITEMS' IN RESPONSE, AND HAVE AT MAX 5
+    range_max = 5 if (len(search_results['artists']['items']) > 5) else len(search_results['artists']['items'])
+    for i in range(0,range_max):
+        print '%d. %s' % (i+1, search_results['artists']['items'][i]['name'])
+    x = raw_input('Enter the correct number:\n')
+    x = int(x) - 1 # convert and decrease by 1
+    while x > 4:
+        x = raw_input('Try that again with a number between 1 and 5.\n')
+        x = int(x) - 1
 
-        keep_going = raw_input('\nWould you like to continue?\n')
+    artist_id = search_results['artists']['items'][x]['id']
 
-        if keep_going in ('n', 'no', 'nope', 'hell nah'):
-            loop_bool = False
+    artist_result = spotify.artist(artist_id=artist_id)
+    related_artists = spotify.artist_related_artists(artist_id=artist_id)
+    related_artists_list = related_artists['artists']
+    print '\nArtists related to %s:' % (search_term)
+    # print json.dumps(related_artists, indent=1)
+    related_artists_list = set(artist['name'] for artist in related_artists_list)
+    print '\n'.join(related_artists_list)
+
 
 # find_ra_intersect() will print a list of all artists related to ALL of the
 # searched artist(s). Initially, this list is just the artists related to the
@@ -47,8 +51,6 @@ def find_ra():
 # Example: user searches for "FIDLAR", "Wavves", and gets a set containing
 # "Ty Segall" (among others)
 #
-# NOTE: currently, the function uses the first artist returned in the search
-# result obtained by the Spotify API
 def find_ra_intersect():
     flag = True
     # set of all searched artists
@@ -57,8 +59,21 @@ def find_ra_intersect():
     while flag:
         search_term = raw_input('Enter an artist to search:\n')
         search_results = spotify.search(q='artist:' + search_term, type='artist')
-        search_terms.append(search_results['artists']['items'][0]['name'])
-        artist_id = search_results['artists']['items'][0]['id']
+
+        # ability for user to select one of the search results (top 5)
+        print 'Which of the following is the correct Artist?'
+        # COUNT NUMBER OF 'ITEMS' IN RESPONSE, AND HAVE AT MAX 5
+        range_max = 5 if (len(search_results['artists']['items']) > 5) else len(search_results['artists']['items'])
+        for i in range(0,range_max):
+            print '%d. %s' % (i+1, search_results['artists']['items'][i]['name'])
+        x = raw_input('Enter the correct number:\n')
+        x = int(x) - 1 # convert and decrease by 1
+        while x > 4:
+            x = raw_input('Try that again with a number between 1 and 5.\n')
+            x = int(x) - 1
+
+        search_terms.append(search_results['artists']['items'][x]['name'])
+        artist_id = search_results['artists']['items'][x]['id']
 
         artist_result = spotify.artist(artist_id=artist_id)
         related_artists = spotify.artist_related_artists(artist_id=artist_id)
@@ -79,15 +94,23 @@ def find_ra_intersect():
 
         # check if user wants to keep looking for relationships
         keep_going = raw_input('\nWould you like to continue?\n')
-        if keep_going in ('N', 'NO', 'n', 'no', 'nope', 'hell nah'):
-            flag = False
-
+        while True:
+            if keep_going in ('N', 'NO', 'n', 'no', 'nope', 'hell nah'):
+                flag = False
+                break
+            elif keep_going in ('Y', 'YES', 'y', 'yes', 'yeah', 'yaaas'):
+                flag = True
+                break
+            else:
+                keep_going = raw_input('Try that again.\n')
 
 # running this module will run the find_ra() function, unless 'intersect' is
 # specified as an argument
 if __name__ == '__main__':
     import sys
-    if sys.argv[1] == 'intersect':
-        find_ra_intersect()
-    else:
+    try:
+        if sys.argv[1] == 'intersect':
+            find_ra_intersect()
+    except IndexError as e:
+        print "intersect not specified"
         find_ra()
